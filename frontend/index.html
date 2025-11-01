@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TODO App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>TODO App</h1>
+    <div class="new-task">
+      <input id="taskInput" placeholder="Escribe una nueva tarea..." />
+      <button id="addBtn">Agregar</button>
+    </div>
+    <ul id="tasksList"></ul>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:3000/tasks";
+    const list = document.getElementById("tasksList");
+    const input = document.getElementById("taskInput");
+    const addBtn = document.getElementById("addBtn");
+
+    async function loadTasks() {
+      list.innerHTML = "<li>Cargando tareas...</li>";
+      try {
+        const res = await fetch(API_URL);
+        const tasks = await res.json();
+        list.innerHTML = tasks.length
+          ? tasks.map(t => `
+            <li>
+              <input type="checkbox" ${t.completed ? "checked" : ""} data-id="${t.id}">
+              <span class="${t.completed ? "done" : ""}">${t.title}</span>
+              <button class="delete" data-id="${t.id}">❌</button>
+            </li>`).join("")
+          : "<li>No hay tareas aún</li>";
+      } catch {
+        list.innerHTML = "<li style='color:red'>Error al conectar con el backend</li>";
+      }
+    }
+
+    addBtn.addEventListener("click", async () => {
+      const title = input.value.trim();
+      if (!title) return alert("Escribe una tarea primero.");
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title })
+      });
+      input.value = "";
+      loadTasks();
+    });
+
+    list.addEventListener("click", async e => {
+      const id = e.target.dataset.id;
+      if (!id) return;
+      if (e.target.type === "checkbox") {
+        await fetch(\`\${API_URL}/\${id}\`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ completed: e.target.checked })
+        });
+      }
+      if (e.target.classList.contains("delete")) {
+        if (confirm("¿Eliminar tarea?"))
+          await fetch(\`\${API_URL}/\${id}\`, { method: "DELETE" });
+      }
+      loadTasks();
+    });
+
+    loadTasks();
+  </script>
+</body>
+</html>

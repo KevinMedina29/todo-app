@@ -45,4 +45,4 @@ services:
       - backend
 
 volumes:
-  pgdata:
+  pgdata: todo-app_pgdata
